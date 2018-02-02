@@ -49,10 +49,14 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
                 FailOnStandardError = "false"
             };
 
+            // Create the handler invoker
+            var stepHost = HostContext.CreateService<IDefaultStepHost>();
+
             // Create the handler.
             var handlerFactory = HostContext.GetService<IHandlerFactory>();
             var handler = (PowerShellExeHandler)handlerFactory.Create(
                 ExecutionContext,
+                stepHost,
                 ExecutionContext.Endpoints,
                 new List<SecureFile>(0),
                 handlerData,
@@ -66,6 +70,11 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
 
             // Run the task.
             await handler.RunAsync();
+        }
+
+        public void InitializeStep(IExecutionContext jobExecutionContext)
+        {
+            ExecutionContext = jobExecutionContext.CreateChild(Guid.NewGuid(), DisplayName, nameof(ManagementScriptStep));
         }
     }
 }

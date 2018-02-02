@@ -13,16 +13,21 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Container
     {
         string DockerPath { get; }
         Task<DockerVersion> DockerVersion(IExecutionContext context);
+        Task<int> DockerLogin(IExecutionContext context, string server, string username, string password);
+        Task<int> DockerLogout(IExecutionContext context, string server);
         Task<int> DockerPull(IExecutionContext context, string image);
-        Task<string> DockerCreate(IExecutionContext context, string image, List<MountVolume> mountVolumes);
+        Task<string> DockerCreate(IExecutionContext context, string image, List<MountVolume> mountVolumes, string displayName, string options);
         Task<int> DockerStart(IExecutionContext context, string containerId);
         Task<int> DockerStop(IExecutionContext context, string containerId);
+        Task<int> DockerNetworkRemove(IExecutionContext context);
         Task<int> DockerExec(IExecutionContext context, string containerId, string options, string command);
         Task<int> DockerExec(IExecutionContext context, string containerId, string options, string command, List<string> outputs);
     }
 
     public class DockerCommandManager : AgentService, IDockerCommandManager
     {
+        private string _dockerNetwork;
+
         public string DockerPath { get; private set; }
 
         public override void Initialize(IHostContext hostContext)
@@ -69,15 +74,36 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Container
             return new DockerVersion(serverVersion, clientVersion);
         }
 
+        public async Task<int> DockerLogin(IExecutionContext context, string server, string username, string password)
+        {
+            return await ExecuteDockerCommandAsync(context, "login", $"--username \"{username}\" --password \"{password}\" {server}", context.CancellationToken);
+        }
+
+        public async Task<int> DockerLogout(IExecutionContext context, string server)
+        {
+            return await ExecuteDockerCommandAsync(context, "logout", $"{server}", context.CancellationToken);
+        }
+
         public async Task<int> DockerPull(IExecutionContext context, string image)
         {
             return await ExecuteDockerCommandAsync(context, "pull", image, context.CancellationToken);
         }
 
-        public async Task<string> DockerCreate(IExecutionContext context, string image, List<MountVolume> mountVolumes)
+        public async Task<string> DockerCreate(IExecutionContext context, string image, List<MountVolume> mountVolumes, string displayName, string options)
         {
+            // Create local docker network share across all following docker create
+            if (string.IsNullOrEmpty(_dockerNetwork))
+            {
+                _dockerNetwork = Guid.NewGuid().ToString("D");
+                int networkExitCode = await ExecuteDockerCommandAsync(context, "network", $"create {_dockerNetwork}", context.CancellationToken);
+                if (networkExitCode != 0)
+                {
+                    throw new InvalidOperationException($"Docker network create failed with exit code {networkExitCode}");
+                }
+            }
+
             string dockerMountVolumesArgs = string.Empty;
-            if (mountVolumes != null && mountVolumes.Count > 0)
+            if (mountVolumes.Count > 0)
             {
                 foreach (var volume in mountVolumes)
                 {
@@ -90,7 +116,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Container
                 }
             }
 
-            string dockerArgs = $"--name {context.Container.ContainerName} --rm -v /var/run/docker.sock:/var/run/docker.sock {dockerMountVolumesArgs} {image} sleep 999d";
+            string dockerArgs = $"--name {displayName} --rm --network={_dockerNetwork} -v /var/run/docker.sock:/var/run/docker.sock {options} {dockerMountVolumesArgs} {image} sleep 999d";
             return (await ExecuteDockerCommandAsync(context, "create", dockerArgs)).FirstOrDefault();
         }
 
@@ -102,6 +128,11 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Container
         public async Task<int> DockerStop(IExecutionContext context, string containerId)
         {
             return await ExecuteDockerCommandAsync(context, "stop", containerId, context.CancellationToken);
+        }
+
+        public async Task<int> DockerNetworkRemove(IExecutionContext context)
+        {
+            return await ExecuteDockerCommandAsync(context, "network", $"rm {_dockerNetwork}", context.CancellationToken);
         }
 
         public async Task<int> DockerExec(IExecutionContext context, string containerId, string options, string command)

@@ -257,7 +257,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Listener.Configuration
                             Trace.Info("Adding tags - {0}", string.Join(",", tagsList.ToArray()));
 
                             deploymentMachine.Tags = tagsList;
-                            await _deploymentGroupServer.UpdateDeploymentTargetsAsync(new Guid(agentSettings.ProjectId), agentSettings.DeploymentGroupId, new List<DeploymentMachine>() { deploymentMachine });
+                            //await _deploymentGroupServer.UpdateDeploymentTargetsAsync(new Guid(agentSettings.ProjectId), agentSettings.DeploymentGroupId, new List<DeploymentMachine>() { deploymentMachine });
 
                             _term.WriteLine(StringUtil.Loc("DeploymentGroupTagsAddedMsg"));
                         }

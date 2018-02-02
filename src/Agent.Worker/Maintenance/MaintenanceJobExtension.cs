@@ -14,16 +14,16 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Maintenance
     {
         public override Type ExtensionType => typeof(IJobExtension);
         public override HostTypes HostType => HostTypes.PoolMaintenance;
-        public override IStep GetExtensionPreJobStep(IExecutionContext jobContext)
+        public override IStep GetExtensionPreJobStep()
         {
             return new JobExtensionRunner(
-                context: jobContext.CreateChild(Guid.NewGuid(), StringUtil.Loc("Maintenance"), nameof(MaintenanceJobExtension)),
+                data: null,
                 runAsync: MaintainAsync,
                 condition: ExpressionManager.Succeeded,
                 displayName: StringUtil.Loc("Maintenance"));
         }
 
-        public override IStep GetExtensionPostJobStep(IExecutionContext jobContext)
+        public override IStep GetExtensionPostJobStep()
         {
             return null;
         }
@@ -39,7 +39,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Maintenance
             repoName = string.Empty;
         }
 
-        private async Task MaintainAsync(IExecutionContext executionContext)
+        private async Task MaintainAsync(IExecutionContext executionContext, object data)
         {
             // Validate args.
             Trace.Entering();

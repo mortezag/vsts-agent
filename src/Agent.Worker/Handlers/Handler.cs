@@ -15,6 +15,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Handlers
         List<ServiceEndpoint> Endpoints { get; set; }
         Dictionary<string, string> Environment { get; set; }
         IExecutionContext ExecutionContext { get; set; }
+        IStepHost StepHost { get; set; }
         string FilePathInputRootDirectory { get; set; }
         Dictionary<string, string> Inputs { get; set; }
         List<SecureFile> SecureFiles { get; set; }
@@ -30,6 +31,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Handlers
         public List<ServiceEndpoint> Endpoints { get; set; }
         public Dictionary<string, string> Environment { get; set; }
         public IExecutionContext ExecutionContext { get; set; }
+        public IStepHost StepHost { get; set; }
         public string FilePathInputRootDirectory { get; set; }
         public Dictionary<string, string> Inputs { get; set; }
         public List<SecureFile> SecureFiles { get; set; }
@@ -69,9 +71,9 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Handlers
                 {
                     partialKey = endpoint.Id.ToString();
                 }
-                else if (string.Equals(endpoint.Name, ServiceEndpoints.SystemVssConnection, StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(endpoint.Name, "SystemVssConnection", StringComparison.OrdinalIgnoreCase))
                 {
-                    partialKey = ServiceEndpoints.SystemVssConnection.ToUpperInvariant();
+                    partialKey = "SystemVssConnection".ToUpperInvariant();
                 }
                 else if (endpoint.Data == null ||
                     !endpoint.Data.TryGetValue(WellKnownEndpointData.RepositoryId, out partialKey) ||

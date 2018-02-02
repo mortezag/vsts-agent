@@ -33,13 +33,12 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Release
         public override Type ExtensionType => typeof(IJobExtension);
         public override HostTypes HostType => HostTypes.Release;
 
-        public override IStep GetExtensionPreJobStep(IExecutionContext jobContext)
+        public override IStep GetExtensionPreJobStep()
         {
             if (ReleaseArtifacts.Any())
             {
                 return new JobExtensionRunner(
-                    context: jobContext.CreateChild(Guid.NewGuid(), StringUtil.Loc("DownloadArtifacts"),
-                        nameof(ReleaseJobExtension)),
+                    data: null,
                     runAsync: DownloadArtifactsAndCommitsAsync,
                     condition: ExpressionManager.Succeeded,
                     displayName: StringUtil.Loc("DownloadArtifacts"));
@@ -48,7 +47,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Release
             return null;
         }
 
-        public override IStep GetExtensionPostJobStep(IExecutionContext jobContext)
+        public override IStep GetExtensionPostJobStep()
         {
             return null;
         }
@@ -110,7 +109,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Release
             sourcePath = string.Empty;
         }
 
-        private async Task DownloadArtifactsAndCommitsAsync(IExecutionContext executionContext)
+        private async Task DownloadArtifactsAndCommitsAsync(IExecutionContext executionContext, object data)
         {
             Trace.Entering();
 
@@ -434,8 +433,8 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Release
 
         private void LogDownloadFailureTelemetry(IExecutionContext executionContext, Exception ex)
         {
-            var code = (ex is ArtifactDownloadException || 
-                        ex is ArtifactDirectoryCreationFailedException || 
+            var code = (ex is ArtifactDownloadException ||
+                        ex is ArtifactDirectoryCreationFailedException ||
                         ex is IOException ||
                         ex is UnauthorizedAccessException) ? DownloadArtifactsFailureUserError : DownloadArtifactsFailureSystemError;
             var issue = new Issue

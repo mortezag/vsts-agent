@@ -360,7 +360,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
                         }
                         break;
                     default:
-                        executionContext.Warning($"Unsupport endpoint authorization schemes: {endpoint.Authorization.Scheme}");
+                        executionContext.Warning($"Unsupported endpoint authorization schemes: {endpoint.Authorization.Scheme}");
                         break;
                 }
             }
