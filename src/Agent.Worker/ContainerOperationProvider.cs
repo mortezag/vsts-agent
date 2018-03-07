@@ -25,8 +25,16 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
 
     public abstract class ContainerOperationProvider : AgentService, IContainerOperationProvider
     {
+        protected IDockerCommandManager _dockerManger;
+
         public abstract Task StartContainerAsync(IExecutionContext executionContext, object data);
         public abstract Task StopContainerAsync(IExecutionContext executionContext, object data);
+
+        public override void Initialize(IHostContext hostContext)
+        {
+            base.Initialize(hostContext);
+            _dockerManger = HostContext.GetService<IDockerCommandManager>();
+        }
 
         public IStep GetContainerStartStep(ContainerInfo container)
         {
@@ -45,20 +53,11 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
 
     public class LinuxContainerOperationProvider : ContainerOperationProvider
     {
-        private IDockerCommandManager _dockerManger;
-
-        public override void Initialize(IHostContext hostContext)
-        {
-            base.Initialize(hostContext);
-            _dockerManger = HostContext.GetService<IDockerCommandManager>();
-        }
-
         public override async Task StartContainerAsync(IExecutionContext executionContext, object data)
         {
             Trace.Entering();
             ArgUtil.NotNull(executionContext, nameof(executionContext));
             var container = data as ContainerInfo;
-            ArgUtil.NotNull(container, nameof(container));
             ArgUtil.NotNullOrEmpty(container.ContainerImage, nameof(container.ContainerImage));
 
             Trace.Info($"Container name: {container.ContainerName}");
@@ -85,7 +84,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
             string registryServer = string.Empty;
             if (!string.IsNullOrEmpty(container.ContainerRegistryEndpoint))
             {
-                var registryEndpoint = executionContext.Endpoints.FirstOrDefault(x => x.Id.ToString() == container.ContainerRegistryEndpoint && x.Type == "dockerregistry");
+                var registryEndpoint = executionContext.Endpoints.FirstOrDefault(x => x.Type == "dockerregistry" && String.Equals(x.Id.ToString(), container.ContainerRegistryEndpoint, StringComparison.OrdinalIgnoreCase));
                 ArgUtil.NotNull(registryEndpoint, nameof(registryEndpoint));
 
                 string username = string.Empty;
@@ -108,7 +107,9 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
             if (!container.SkipContainerImagePull)
             {
                 string imageName = container.ContainerImage;
-                if (!string.IsNullOrEmpty(registryServer) && registryServer.IndexOf("index.docker.io", StringComparison.OrdinalIgnoreCase) < 0)
+                if (!string.IsNullOrEmpty(registryServer) && 
+                    registryServer.IndexOf("index.docker.io", StringComparison.OrdinalIgnoreCase) < 0 &&
+                    !image.StartsWith(registryServer, StringComparison.OrdinalIgnoreCase))
                 {
                     imageName = $"{registryServer}/{imageName}";
                 }
@@ -246,7 +247,6 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
             Trace.Entering();
             ArgUtil.NotNull(executionContext, nameof(executionContext));
             var container = data as ContainerInfo;
-            ArgUtil.NotNull(container, nameof(container));
 
             if (!string.IsNullOrEmpty(container.ContainerId))
             {

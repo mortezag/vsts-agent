@@ -252,10 +252,9 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
 
                 // Run all job steps
                 Trace.Info("Run all job steps.");
-                var stepsRunner = HostContext.CreateService<IStepsRunner>();
+                var stepsRunner = HostContext.GetService<IStepsRunner>();
                 try
                 {
-                    // Set Agent.JobStatus to succeeded
                     await stepsRunner.RunAsync(jobContext, jobSteps);
                 }
                 catch (Exception ex)

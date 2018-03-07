@@ -103,7 +103,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Container
             }
 
             string dockerMountVolumesArgs = string.Empty;
-            if (mountVolumes.Count > 0)
+            if (mountVolumes?.Count > 0)
             {
                 foreach (var volume in mountVolumes)
                 {

@@ -33,8 +33,8 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
 
         public abstract Type ExtensionType { get; }
 
-        // Anything job extension want to do before building the steps list. This will be deprecated when GetSource move to a task.
-        public abstract void InitializeJobExtension(IExecutionContext jobContext);
+        // Anything job extension want to do before building the steps list.
+        public abstract void InitializeJobExtension(IExecutionContext context);
 
         // Anything job extension want to add to pre-job steps list. This will be deprecated when GetSource move to a task.
         public abstract IStep GetExtensionPreJobStep();

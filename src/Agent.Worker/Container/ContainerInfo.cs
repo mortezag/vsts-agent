@@ -17,14 +17,20 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Container
 
             this.ContainerDisplayName = $"{container.Name}_{Pipelines.Validation.NameValidation.Sanitize(containerImage)}";
 
-            container.Data.TryGetValue("registry", out string containerRegistry);
-            this.ContainerRegistryEndpoint = containerRegistry;
+            if (container.Data.TryGetValue("registry", out string containerRegistry))
+            {
+                this.ContainerRegistryEndpoint = containerRegistry;
+            }
 
-            container.Data.TryGetValue("options", out string containerCreateOptions);
-            this.ContainerCreateOptions = containerCreateOptions;
+            if (container.Data.TryGetValue("options", out string containerCreateOptions))
+            {
+                this.ContainerCreateOptions = containerCreateOptions;
+            }
 
-            container.Data.TryGetValue("localimage", out string localImage);
-            this.SkipContainerImagePull = StringUtil.ConvertToBoolean(localImage);
+            if (container.Data.TryGetValue("localimage", out string localImage))
+            {
+                this.SkipContainerImagePull = StringUtil.ConvertToBoolean(localImage);
+            }
         }
 
         private List<MountVolume> _mountVolumes;

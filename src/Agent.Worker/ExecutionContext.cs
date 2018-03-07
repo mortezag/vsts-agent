@@ -376,7 +376,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
             {
                 var dockerContainer = new Pipelines.ContainerReference()
                 {
-                    Name = "vsts_preview"
+                    Name = "vsts_container_preview"
                 };
                 dockerContainer.Data["image"] = imageName;
                 Container = new ContainerInfo(dockerContainer);
