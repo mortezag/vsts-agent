@@ -109,7 +109,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
                 string imageName = container.ContainerImage;
                 if (!string.IsNullOrEmpty(registryServer) && 
                     registryServer.IndexOf("index.docker.io", StringComparison.OrdinalIgnoreCase) < 0 &&
-                    !image.StartsWith(registryServer, StringComparison.OrdinalIgnoreCase))
+                    !imageName.StartsWith(registryServer, StringComparison.OrdinalIgnoreCase))
                 {
                     imageName = $"{registryServer}/{imageName}";
                 }
@@ -139,7 +139,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker
 
             try
             {
-                container.ContainerId = await _dockerManger.DockerCreate(executionContext, container.image, container.MountVolumes, container.ContainerDisplayName, container.ContainerCreateOptions);
+                container.ContainerId = await _dockerManger.DockerCreate(executionContext, container.ContainerImage, container.MountVolumes, container.ContainerDisplayName, container.ContainerCreateOptions);
                 ArgUtil.NotNullOrEmpty(container.ContainerId, nameof(container.ContainerId));
 
                 // Start container
