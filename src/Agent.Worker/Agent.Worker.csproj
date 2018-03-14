@@ -17,6 +17,24 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="4.4.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Microsoft.VisualStudio.Services.ArtifactServices.App.Shared">
+      <HintPath>E:\VSO\bin\Debug.AnyCPU\ArtifactServices.App.Shared\netstandard2.0\Microsoft.VisualStudio.Services.ArtifactServices.App.Shared.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Services.BlobStore.Common">
+      <HintPath>E:\VSO\bin\Debug.AnyCPU\ArtifactServices.Shared\netstandard2.0\Microsoft.VisualStudio.Services.BlobStore.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Services.BlobStore.WebApi">
+      <HintPath>E:\VSO\bin\Debug.AnyCPU\BlobStore.Client\netstandard2.0\Microsoft.VisualStudio.Services.BlobStore.WebApi.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Services.Content.Common">
+      <HintPath>E:\VSO\bin\Debug.AnyCPU\ArtifactServices.Shared\netstandard2.0\Microsoft.VisualStudio.Services.Content.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Services.ContentStoreInterfaces">
+      <HintPath>E:\VSO\bin\Debug.AnyCPU\ArtifactServices.Shared\netstandard2.0\Microsoft.VisualStudio.Services.ContentStoreInterfaces.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugType>portable</DebugType>
   </PropertyGroup>
