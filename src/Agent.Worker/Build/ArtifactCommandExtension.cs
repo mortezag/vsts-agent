@@ -1,14 +1,16 @@
 ﻿using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.DistributedTask.WebApi;
 using Microsoft.VisualStudio.Services.Agent.Util;
+using Microsoft.VisualStudio.Services.BlobStore.WebApi;
 using Microsoft.VisualStudio.Services.Common;
+using Microsoft.VisualStudio.Services.WebApi;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Services.WebApi;
 
 namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
 {
@@ -174,11 +176,21 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
                 return;
             }
 
+            string uploadService;
+            if (!eventProperties.TryGetValue(ArtifactUploadEventProperties.UploadService, out uploadService) ||
+                string.IsNullOrEmpty(uploadService))
+            {
+                uploadService = ArtifactUploadSerivce.Container;
+            }
+
             // queue async command task to associate artifact.
             context.Debug($"Upload artifact: {fullPath} to server for build: {buildId.Value} at backend.");
             var commandContext = HostContext.CreateService<IAsyncCommandContext>();
             commandContext.InitializeCommandContext(context, StringUtil.Loc("UploadArtifact"));
-            commandContext.Task = UploadArtifactAsync(commandContext,
+
+            if (uploadService == ArtifactUploadSerivce.Container)
+            {
+                commandContext.Task = UploadArtifactToContainerAsync(commandContext,
                                                       WorkerUtilities.GetVssConnection(context),
                                                       projectId,
                                                       containerId.Value,
@@ -188,6 +200,22 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
                                                       propertyDictionary,
                                                       fullPath,
                                                       context.CancellationToken);
+            } else if (uploadService == ArtifactUploadSerivce.BlobStore)
+            {
+                commandContext.Task = UploadArtifactToBlobStoreAsync(commandContext,
+                                                      WorkerUtilities.GetVssConnection(context),
+                                                      projectId,
+                                                      buildId.Value,
+                                                      artifactName,
+                                                      propertyDictionary,
+                                                      fullPath,
+                                                      context.CancellationToken);
+            }
+            else
+            {
+                throw new Exception(StringUtil.Loc("ArtifactUploadServiceNotSupported", uploadService)); // TODO create ArtifactUploadServiceNotSupported
+            }
+
             context.AsyncCommands.Add(commandContext);
         }
 
@@ -207,7 +235,7 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
             context.Output(StringUtil.Loc("AssociateArtifactWithBuild", artifact.Id, buildId));
         }
 
-        private async Task UploadArtifactAsync(
+        private async Task UploadArtifactToContainerAsync(
             IAsyncCommandContext context,
             VssConnection connection,
             Guid projectId,
@@ -227,6 +255,29 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
             BuildServer buildHelper = new BuildServer(connection, projectId);
             var artifact = await buildHelper.AssociateArtifact(buildId, name, WellKnownArtifactResourceTypes.Container, fileContainerFullPath, propertiesDictionary, cancellationToken);
             context.Output(StringUtil.Loc("AssociateArtifactWithBuild", artifact.Id, buildId));
+        }
+		
+        private async Task UploadArtifactToBlobStoreAsync(
+            IAsyncCommandContext context,
+            VssConnection connection,
+            Guid projectId,
+            int buildId,
+            string name,
+            Dictionary<string, string> propertiesDictionary,
+            string source,
+            CancellationToken cancellationToken)
+        {
+            var uri = new Uri($"https://{connection.Uri.Host.Split(".")[0]}.vsblob.visualstudio.com/DefaultCollection/"); // TODO Figure out how to calculate url better
+            var httpclient = new DedupStoreHttpClient(uri, connection.Credentials);
+            var client = new DedupStoreClient(httpclient, Environment.ProcessorCount);
+
+            var publisher = new DedupStorePublisher(client);
+            var result = await publisher.PublishAsync(source, CancellationToken.None);
+
+            var serializedData = JsonConvert.SerializeObject(result);
+
+            BuildServer buildHelper = new BuildServer(connection, projectId);
+            await buildHelper.AssociateArtifact(buildId, name, "Dedup" /* TODO change Dedup to a WellKnownArtifactType */, serializedData, propertiesDictionary, cancellationToken);
         }
 
         private Boolean IsContainerPath(string path)
@@ -326,7 +377,14 @@ namespace Microsoft.VisualStudio.Services.Agent.Worker.Build
     internal static class ArtifactUploadEventProperties
     {
         public static readonly string ContainerFolder = "containerfolder";
+        public static readonly string UploadService = "uploadservice";
         public static readonly string ArtifactName = "artifactname";
         public static readonly string Browsable = "Browsable";
+    }
+
+    internal static class ArtifactUploadSerivce
+    {
+        public static readonly string Container = "container";
+        public static readonly string BlobStore = "blobstore";
     }
 }
